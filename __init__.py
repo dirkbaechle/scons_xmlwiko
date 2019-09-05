@@ -61,6 +61,12 @@ __ex_moin_builder = SCons.Builder.Builder(
         suffix = '.moin',
         single_source = True
         )
+__ex_rest_builder = SCons.Builder.Builder(
+        action = SCons.Action.Action('$XMLWIKO -q rest $SOURCE $TARGET', '$XMLWIKO_COMSTR'),
+        src_suffix = '.wiki',
+        suffix = '.rst',
+        single_source = True
+        )
 
 #
 # Pseudo-builders
@@ -122,6 +128,25 @@ def XmlwikoMoin(env, target, source=None, *args, **kw):
 
     return result
 
+def XmlwikoRest(env, target, source=None, *args, **kw):
+    """
+    A pseudo-Builder wrapper around the xmlwiko for reStructuredText output.
+    """
+    if not SCons.Util.is_List(target):
+        target = [target]
+    if not source:
+        source = target[:]
+    elif not SCons.Util.is_List(source):
+        source = [source]
+    if len(target) < len(source):
+        target.extend(source[len(target):])
+
+    result = []    
+    for t,s in zip(target,source):
+        result.extend(__ex_rest_builder.__call__(env, t, s, **kw))
+
+    return result
+
 
 def generate(env):
     """Add Builders and construction variables for xmlwiko to an Environment."""
@@ -133,12 +158,15 @@ def generate(env):
         env.AddMethod(XmlwikoForrest, "XmlwikoForrest")
         env.AddMethod(XmlwikoDocbook, "XmlwikoDocbook")
         env.AddMethod(XmlwikoMoin, "XmlwikoMoin")
+        env.AddMethod(XmlwikoRest, "XmlwikoRest")
     except AttributeError:
         # Looks like we use a pre-0.98 version of SCons...
         from SCons.Script.SConscript import SConsEnvironment
         SConsEnvironment.XmlwikoForrest = XmlwikoForrest
         SConsEnvironment.XmlwikoDocbook = XmlwikoDocbook
         SConsEnvironment.XmlwikoMoin = XmlwikoMoin
+        SConsEnvironment.XmlwikoRest = XmlwikoRest
 
 def exists(env):
     return 1
+
